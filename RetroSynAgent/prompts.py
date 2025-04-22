@@ -484,7 +484,9 @@ Recommended Reaction Pathway: List reaction indices (e.g., idx4, idx7, idx3).
 Reaction idx: Specify the reaction index.
 Reactants: List the substances with specific names, separated by commas.
 Products: List the substances with specific names, separated by commas.
-Reaction SMILES: Provide the reaction SMILES string.
+Reaction SMILES: Provide the full reaction SMILES string in the format
+    reactant1.reactant2... > agent1.agent2... > product1.product2...
+    where “agents” includes solvents, catalysts, and reagents; if no agents are needed, use reactants >> products.
 Conditions: List conditions in specified order; skip if unknown.
 Source: Source literature name.
 SourceLink: Provide the source literature PDF link.
