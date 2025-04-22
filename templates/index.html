@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tree Visualization</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        /* Style for normal large tree nodes */
+        .normal {
+            stroke: #555;
+            stroke-width: 0.1px;
+        }
+
+        /* Style for highlighted small tree nodes */
+        .highlight {
+            stroke: black;
+            stroke-width: 1.2px;
+        }
+
+        /* Style for two paths */
+        .path1 {
+            stroke: purple;
+            stroke-width: 1.2px;
+            filter: drop-shadow(0 0 1px orangered) drop-shadow(0 0 1px orangered);
+        }
+
+        .path2 {
+            /*todo: change color*/
+            stroke: purple;
+            stroke-width: 1.2px;
+            filter: drop-shadow(0 0 1px hotpink) drop-shadow(0 0 1px hotpink);
+        }
+
+        .black_tree{
+            stroke: black;
+            stroke-width: 2px;
+        }
+
+        /*25-1-5*/
+        .path1_highlight{
+            stroke: black;
+            stroke-width: 1.0px;
+            filter: drop-shadow(0 0 1px orangered) drop-shadow(0 0 1px orangered);
+        }
+
+        .path1_normal{
+            stroke: #555;
+            stroke-width: 0.1px;
+            filter: drop-shadow(0 0 1px orangered) drop-shadow(0 0 1px orangered);
+        }
+
+        .path2_highlight{
+            stroke: black;
+            stroke-width: 1.0px;
+            filter: drop-shadow(0 0 1px hotpink) drop-shadow(0 0 1px hotpink);
+        }
+
+        .path2_normal{
+            stroke: #555;
+            stroke-width: 0.1px;
+            filter: drop-shadow(0 0 1px hotpink) drop-shadow(0 0 1px hotpink);
+        }
+
+        .highlightLinks{
+            stroke: black; /*black*/
+        }
+
+        .path1Links{
+            filter: drop-shadow(0 0 1px orangered) drop-shadow(0 0 1px orangered);
+        }
+
+        .path2Links{
+            filter: drop-shadow(0 0 1px hotpink) drop-shadow(0 0 1px hotpink);
+        }
+
+        .normalLinks{
+
+        }
+
+        /* Table style */
+        table {
+            border-collapse: collapse;  /* Remove spacing between table borders */
+            width: 80%;                 /* Set table width */
+            margin: 0 auto;             /* Center the table */
+            font-family: "Arial";       /* Set font style */
+        }
+
+        td {
+            border: 1px solid #ddd;     /* Border for each cell */
+            padding: 8px;               /* Padding inside each cell */
+            width: 16.66%;              /* Each cell takes one-sixth of the table width */
+        }
+
+    </style>
+</head>
+<body>
+    <h1>Tree Structure Visualization</h1>
+    <div id="tree-container">
+        <button id="downloadBtn">Download SVG</button>
+    </div>
+    <table id="indices-container">
+    </table>
+    <button onclick="exportTableToJson('table.json')">Download Json</button>
+    <!-- Include JavaScript file -->
+    <script src="../static/radial_tidy_tree.js"></script>
+    <script>
+        // Call the function to fetch and render the tree when the page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            // Try different visualization methods in sequence if previous ones fail
+            fetchAndRenderFive().catch(() => {
+                console.log('Falling back to quad visualization');
+                fetchAndRenderQuad().catch(() => {
+                    console.log('Falling back to three visualization');
+                    fetchAndRenderThree().catch(() => {
+                        console.log('Falling back to double visualization');
+                        fetchAndRenderDouble().catch(() => {
+                            console.log('All visualizations failed');
+                        });
+                    });
+                });
+            });
+        });
+    </script>
+</body>
+</html>
