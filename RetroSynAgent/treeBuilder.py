@@ -6,6 +6,7 @@ import pubchempy
 import pickle
 import os
 import re
+import http.client
 from collections import deque
 class CommonSubstanceDB:
     def __init__(self):
@@ -49,15 +50,20 @@ class CommonSubstanceDB:
         added_database = set(emol_list) | set(polymers) | {"2-chlorotrifluoromethylbenzene"}
         return added_database
 
-    def is_common_chemical(self, compound_name, max_retries=1, delay=1):
+    def is_common_chemical(self, compound_name, max_retries=3, delay=2):
         compound_identifier = self.get_smiles_cached(compound_name)
+
+        # First check local databases to avoid network calls
+        if compound_identifier in self.added_database:
+            print(f"{compound_identifier} query succeed in emol or added db")
+            return True
+
+        # Then try PubChem with retries
         retries = 0
         while retries < max_retries:
             try:
-                if compound_identifier in self.added_database:
-                    print(f"{compound_identifier} query succeed in emol or added db")
-                    return True
-                compound = pubchempy.get_compounds(compound_identifier, 'smiles',verify=False)
+                # Try to query PubChem
+                compound = pubchempy.get_compounds(compound_identifier, 'smiles', verify=False)
                 if not compound:
                     compound = pubchempy.get_compounds(compound_identifier, 'name',verify=False)
                 if compound:
@@ -65,10 +71,17 @@ class CommonSubstanceDB:
                     return True
                 return False
             except pubchempy.PubChemHTTPError as e:
+                print(f"PubChem HTTP error for '{compound_identifier}': {e}")
+                retries += 1
+                time.sleep(delay * (retries + 1))  # Exponential backoff
+            except http.client.RemoteDisconnected as e:
+                print(f"Remote disconnected error for '{compound_identifier}': {e}")
+                retries += 1
+                time.sleep(delay * (retries + 1))  # Exponential backoff
+            except Exception as e:
+                print(f"Other error for '{compound_identifier}': {e}")
                 retries += 1
                 time.sleep(delay)
-            except Exception as e:
-                print(f"other error: {e}")
         return False
 
     def get_smiles_cached(self, compound_name):
@@ -94,10 +107,18 @@ class CommonSubstanceDB:
         if smiles_pattern.match(identifier):
             return identifier
 
-        compounds = pubchempy.get_compounds(identifier, 'name')
-        if compounds:
-            return compounds[0].canonical_smiles
-        else:
+        try:
+            # Try to get SMILES from PubChem with a timeout
+            compounds = pubchempy.get_compounds(identifier, 'name')
+            if compounds:
+                return compounds[0].canonical_smiles
+            else:
+                print(f"No PubChem results found for '{identifier}'")
+                return identifier
+        except Exception as e:
+            # Handle network errors or other exceptions
+            print(f"Error getting SMILES for '{identifier}': {str(e)}")
+            print(f"Using original identifier as fallback")
             return identifier
 
     def load_dict_from_json(self, filename):

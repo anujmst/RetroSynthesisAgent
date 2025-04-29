@@ -16,6 +16,7 @@ class RetroRequest(BaseModel):
     alignment: bool = False
     expansion: bool = False
     filtration: bool = False
+    retrieval_mode: str = "patent-paper"
 
 class RetroResponse(BaseModel):
     status: str
@@ -31,6 +32,7 @@ async def retro_synthesis(req: RetroRequest):
     - **alignment**: Whether to perform entity alignment
     - **expansion**: Whether to expand the reaction tree with additional literature
     - **filtration**: Whether to filter reactions/pathways
+    - **retrieval_mode**: Document retrieval mode (patent-patent, paper-paper, paper-patent, patent-paper)
     """
     try:
         result = main(
@@ -38,7 +40,8 @@ async def retro_synthesis(req: RetroRequest):
             num_results=req.num_results,
             alignment=req.alignment,
             expansion=req.expansion,
-            filtration=req.filtration
+            filtration=req.filtration,
+            retrieval_mode=req.retrieval_mode
         )
         return {"status": "success", "data": result}
     except Exception as e:

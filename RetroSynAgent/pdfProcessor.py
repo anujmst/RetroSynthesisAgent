@@ -141,7 +141,7 @@ class PDFProcessor:
             total_length = len(base64_img_list)+len(cleaned_text)
             print(f'Processing: {pdf_name}, TXT Length: {len(cleaned_text)}, IMG Num: {len(base64_img_list)}')
             # todo: max length
-            if total_length > 200000:
+            if total_length > 500000:
                 print(f'{pdf_name} Exceed maximum length, skip ...')
                 continue
             # Extract the reaction first, then extract the property based on the reaction
@@ -194,7 +194,7 @@ class PDFProcessor:
             cleaned_text = self.pdf_to_long_string(os.path.join(self.pdf_folder_name, pdf_path))
             total_length = len(cleaned_text)
             print(f'Processing: {pdf_name}, TXT Length: {total_length}')
-            if total_length > 200000:
+            if total_length > 300000:
                 print(f'{pdf_name} Exceed maximum length, skip ...')
                 continue
             llm = GPTAPI(temperature = 0.0)

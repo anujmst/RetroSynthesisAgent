@@ -105,7 +105,7 @@ This section provides a brief overview of the installation process. For detailed
 ```bash
 conda create -n retrosyn python=3.11
 conda activate retrosyn
-pip install rdkit requests python-dotenv PyMuPDF scholarly openai networkx graphviz pubchempy Pillow fastapi pydantic uvicorn pyvis loguru
+pip install rdkit requests python-dotenv PyMuPDF scholarly openai networkx graphviz pubchempy Pillow fastapi pydantic uvicorn pyvis loguru redis tqdm
 ```
 
 Alternatively, you can install from the requirements.txt file:
@@ -127,6 +127,15 @@ pip install -r requirements.txt
    ```
    This will create a JSON file with SMILES strings that will be used by the system to identify commercially available compounds.
 
+3. For patent-based retrieval modes, download the molecule_to_patent.jsonl dataset:
+   - Download from: https://doi.org/10.5281/zenodo.10572870
+   - Place the file in the project root directory
+   - Import the data into Redis using the provided script:
+   ```bash
+   python setup_patent_redis.py
+   ```
+   This will populate your local Redis database with SMILES-to-patent mappings needed for patent searches.
+
 ### Environment Configuration
 
 Create a `.env` file in the project root with the following information:
@@ -147,19 +156,29 @@ The HEADERS and COOKIES are used for web scraping of scientific literature. You 
 To run the RetroSynthesisAgent from the command line:
 
 ```bash
-python main.py --material [MATERIAL_NAME] --num_results [NUMBER_OF_PAPERS] --alignment [True/False] --expansion [True/False] --filtration [True/False]
+python main.py --material [MATERIAL_NAME] --num_results [NUMBER_OF_PAPERS] --alignment [True/False] --expansion [True/False] --filtration [True/False] --retrieval_mode [MODE]
 ```
+
+The `retrieval_mode` parameter controls how documents are retrieved:
+- `patent-patent`: Uses patents for both initial retrieval and expansion
+- `paper-paper`: Uses academic papers for both initial retrieval and expansion
+- `paper-patent`: Uses academic papers for initial retrieval, patents for expansion
+- `patent-paper`: Uses patents for initial retrieval, academic papers for expansion (default)
 
 Example:
 
 ```bash
-python main.py --material polyimide --num_results 15 --alignment True --expansion True --filtration True
+python main.py --material polyimide --num_results 15 --alignment True --expansion True --filtration True --retrieval_mode paper-paper
 ```
 
-Alternatively, you can use the provided shell script:
+Alternatively, you can use the provided shell scripts:
 
 ```bash
+# Run with default settings
 sh runRetroSynAgent.sh
+
+# Try all retrieval modes
+sh run_retrieval_modes.sh [MATERIAL_NAME] [NUMBER_OF_PAPERS]
 ```
 
 ### API
@@ -184,7 +203,8 @@ curl --location 'http://localhost:8000/retro-synthesis/' \
            "num_results": 15,
            "alignment": true,
            "expansion": true,
-           "filtration": true
+           "filtration": true,
+           "retrieval_mode": "paper-paper"
          }'
 ```
 
@@ -194,6 +214,10 @@ For more detailed API usage examples and integration patterns, please refer to t
 
 ### PDF Downloader
 
+The system includes two document retrieval components:
+
+#### Academic Paper Downloader
+
 The PDFDownloader component is responsible for searching and downloading scientific literature related to the target material. It uses the Google Scholar API through the scholarly library to find relevant papers and then attempts to download them using Sci-Hub.
 
 Key features:
@@ -202,6 +226,18 @@ Key features:
 - Downloads PDFs using multiple threads for efficiency
 - Handles cases where papers are not available for download
 - Maintains a list of already downloaded papers to avoid duplicates
+
+#### Patent Downloader
+
+The PatentPDFDownloader component retrieves patents related to a specific chemical structure (SMILES string). It uses a local Redis database populated with SMILES-to-patent mappings.
+
+Key features:
+
+- Searches for patents based on SMILES strings
+- Automatically converts chemical names to SMILES when possible
+- Downloads patent PDFs from Google Patents
+- Handles various patent formats and jurisdictions
+- Implements retry mechanisms and error handling
 
 ### PDF Processor
 
@@ -243,8 +279,10 @@ Key features:
 
 - Identifies unexpandable intermediates in the tree
 - Searches for additional literature specifically for those intermediates
+- Supports multiple retrieval modes (academic papers, patents, or both)
 - Integrates new reactions into the existing tree
 - Iteratively expands the tree until all pathways lead to commercially available starting materials
+- Implements fallback mechanisms when certain retrieval methods fail
 
 ### Reactions Filtration
 

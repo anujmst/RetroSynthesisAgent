@@ -1,6 +1,7 @@
 import os
 import copy
 import json
+import re
 from . import prompts
 from .treeBuilder import Tree, TreeLoader
 from .pdfDownloader import PDFDownloader
@@ -35,7 +36,7 @@ class TreeExpansion:
                 dict1[key] = value
         return dict1
 
-    def expand_reactions_from_literature(self, result_folder_name, result_json_name, material, origin_result_dict, max_iter = 10):
+    def expand_reactions_from_literature(self, result_folder_name, result_json_name, material, origin_result_dict, max_iter=10, retrieval_mode="patent-paper", smiles=None):
         add_results_filepath = result_folder_name + '/' + result_json_name + '_add.json'
         literature_add_folder = 'pdf_add'
         os.makedirs(literature_add_folder, exist_ok=True)
@@ -57,7 +58,7 @@ class TreeExpansion:
                 result_dict = self.update_dict(result_dict, add_results_new)
             tree = Tree(material.lower(), result_dict = result_dict)
             result = tree.construct_tree()
-            
+
             if tree.unexpandable_substances != set():
                 unexp_subs_list = list(tree.unexpandable_substances)  # set -> list
                 print(f"Unexpandable substances: {', '.join(unexp_subs_list)}")
@@ -92,9 +93,59 @@ class TreeExpansion:
                     # If the number of PDFs in the folder is less than 3, try downloading
                     while len(os.listdir(pdf_folder_path)) < 3 and attempt_iter < 3:
                         attempt_iter += 1
-                        downloader = PDFDownloader(substance, pdf_folder_name=pdf_folder_path,
-                                                   num_results=attempt_iter, n_thread=3)
-                        pdf_name_list = downloader.main()
+
+                        # Second part of retrieval_mode determines expansion document source
+                        if retrieval_mode.endswith("patent"):
+                            # Use patent downloader for expansion
+                            from .patentPDFDownloader import PatentPDFDownloader
+                            from .name_to_smiles import NameToSMILES
+
+                            # Try to convert substance name to SMILES
+                            valid_smiles = False
+                            substance_smiles = substance
+
+                            # Check if it already looks like a SMILES string
+                            if re.search(r"[=#@\\/\[\]]|^[Cc][1-9]=|\.|\.\.\.|\.\\..", substance):
+                                valid_smiles = True
+                            else:
+                                # Try to convert to SMILES
+                                print(f"Converting {substance} to SMILES for patent search...")
+                                success, result = NameToSMILES.convert(substance)
+                                if success:
+                                    substance_smiles = result
+                                    valid_smiles = True
+                                    print(f"Successfully converted '{substance}' to SMILES: {substance_smiles}")
+                                else:
+                                    print(f"Warning: Could not convert '{substance}' to SMILES: {result}")
+                                    print(f"Cannot use patent search for this substance. Falling back to academic paper search.")
+                                    valid_smiles = False
+
+                            # Only use PatentPDFDownloader if we have a valid SMILES
+                            if valid_smiles:
+                                try:
+                                    downloader = PatentPDFDownloader(pdf_folder_name=pdf_folder_path, max_patents=attempt_iter)
+                                    pdf_name_list = downloader.process_smile(substance_smiles)
+                                    print(f"Downloaded {len(pdf_name_list)} patent PDFs for expansion of {substance}")
+                                except ValueError as e:
+                                    print(f"Error with patent search: {str(e)}")
+                                    print("Falling back to academic paper search.")
+                                    # Fall back to academic paper search
+                                    downloader = PDFDownloader(substance, pdf_folder_name=pdf_folder_path,
+                                                           num_results=attempt_iter, n_thread=3)
+                                    pdf_name_list = downloader.main()
+                                    print(f"Downloaded {len(pdf_name_list)} academic paper PDFs for expansion of {substance}")
+                            else:
+                                # Fall back to academic paper search if no valid SMILES
+                                downloader = PDFDownloader(substance, pdf_folder_name=pdf_folder_path,
+                                                       num_results=attempt_iter, n_thread=3)
+                                pdf_name_list = downloader.main()
+                                print(f"Downloaded {len(pdf_name_list)} academic paper PDFs for expansion of {substance}")
+                        else:
+                            # Use academic paper downloader for expansion
+                            downloader = PDFDownloader(substance, pdf_folder_name=pdf_folder_path,
+                                                       num_results=attempt_iter, n_thread=3)
+                            pdf_name_list = downloader.main()
+                            print(f"Downloaded {len(pdf_name_list)} academic paper PDFs for expansion of {substance}")
 
                     # Determine whether the download is successful based on the last file number
                     if len(os.listdir(pdf_folder_path)) < 3:
@@ -119,7 +170,11 @@ class TreeExpansion:
                         except (FileNotFoundError, json.JSONDecodeError):
                             origin_add_results = {}
                         if pdf_name_wo_suffix not in origin_add_results:
-                            pdf_path = pdf_folder_path + '/' + pdf_name
+                            # Ensure we don't duplicate the path
+                            if pdf_name.startswith(pdf_folder_path):
+                                pdf_path = pdf_name
+                            else:
+                                pdf_path = os.path.join(pdf_folder_path, pdf_name)
                             # pdf_path = 'literature_add_folder/pdf_add_substancesName/literatureTitle.pdf'
                             pdf_processor = PDFProcessor()
                             long_string = pdf_processor.pdf_to_long_string(pdf_path)
@@ -151,7 +206,7 @@ class TreeExpansion:
         return add_results_new
 
 
-    def treeExpansion(self, result_folder_name, result_json_name, results_dict, material, expansion = False, max_iter = 10):
+    def treeExpansion(self, result_folder_name, result_json_name, results_dict, material, expansion=False, max_iter=10, retrieval_mode="patent-paper", smiles=None):
         add_results_filepath = result_folder_name + '/' + result_json_name + '_add.json'
         if os.path.exists(add_results_filepath):
             with open(add_results_filepath, 'r') as file:
@@ -168,7 +223,9 @@ class TreeExpansion:
             # note: key step expand to full
             add_results_new = self.expand_reactions_from_literature(result_folder_name, result_json_name, material,
                                                                     origin_result_dict = results_dict,
-                                                                    max_iter = max_iter)
+                                                                    max_iter = max_iter,
+                                                                    retrieval_mode = retrieval_mode,
+                                                                    smiles = smiles)
             if add_results_new:
                 # add_results.update(add_results_new)
                 add_results = self.update_dict(add_results, add_results_new)

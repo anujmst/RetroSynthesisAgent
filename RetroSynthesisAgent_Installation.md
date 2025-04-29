@@ -29,7 +29,7 @@ conda create -n retrosyn python=3.11
 conda activate retrosyn
 
 # Install required packages
-pip install rdkit requests python-dotenv PyMuPDF scholarly openai networkx graphviz pubchempy Pillow fastapi pydantic uvicorn pyvis loguru
+pip install rdkit requests python-dotenv PyMuPDF scholarly openai networkx graphviz pubchempy Pillow fastapi pydantic uvicorn pyvis loguru redis tqdm
 ```
 
 #### Using venv
@@ -57,6 +57,39 @@ The RetroSynthesisAgent uses the eMolecules dataset to identify commercially ava
    ```bash
    python create.py
    ```
+
+### 4. Set Up Redis and Patent Data (Optional, for Patent-Based Retrieval)
+
+If you want to use the patent-based retrieval modes, you'll need to set up Redis and import the patent data:
+
+1. Install Redis:
+
+   **On macOS:**
+   ```bash
+   brew install redis
+   brew services start redis
+   ```
+
+   **On Ubuntu/Debian:**
+   ```bash
+   sudo apt update
+   sudo apt install redis-server
+   sudo systemctl start redis-server
+   ```
+
+   **On Windows:**
+   Download and install Redis from https://github.com/microsoftarchive/redis/releases
+
+2. Download the molecule_to_patent.jsonl dataset:
+   - Download from: https://doi.org/10.5281/zenodo.10572870
+   - Place the file in the project root directory
+
+3. Import the data into Redis:
+   ```bash
+   python setup_patent_redis.py
+   ```
+
+   This will populate your local Redis database with SMILES-to-patent mappings needed for patent searches. The import process may take some time depending on your system.
 
    This script will:
    - Extract SMILES strings from the gzipped file
@@ -134,12 +167,32 @@ This should:
 To run the RetroSynthesisAgent from the command line:
 
 ```bash
-python main.py --material [MATERIAL_NAME] --num_results [NUMBER_OF_PAPERS] --alignment [True/False] --expansion [True/False] --filtration [True/False]
+python main.py --material [MATERIAL_NAME] --num_results [NUMBER_OF_PAPERS] --alignment [True/False] --expansion [True/False] --filtration [True/False] --retrieval_mode [MODE]
 ```
 
-Example:
+The `retrieval_mode` parameter controls how documents are retrieved:
+- `patent-patent`: Uses patents for both initial retrieval and expansion
+- `paper-paper`: Uses academic papers for both initial retrieval and expansion
+- `paper-patent`: Uses academic papers for initial retrieval, patents for expansion
+- `patent-paper`: Uses patents for initial retrieval, academic papers for expansion (default)
+
+Examples:
 ```bash
-python main.py --material polyimide --num_results 15 --alignment True --expansion True --filtration True
+# Using academic papers for both initial retrieval and expansion
+python main.py --material polyimide --num_results 15 --alignment True --expansion True --filtration True --retrieval_mode paper-paper
+
+# Using patents for both initial retrieval and expansion
+python main.py --material aspirin --num_results 10 --alignment True --expansion True --filtration True --retrieval_mode patent-patent
+```
+
+You can also use the provided scripts to run with different modes:
+
+```bash
+# Run with default settings
+sh runRetroSynAgent.sh
+
+# Try all retrieval modes
+sh run_retrieval_modes.sh [MATERIAL_NAME] [NUMBER_OF_PAPERS]
 ```
 
 ### API Server
@@ -194,6 +247,21 @@ The graphviz Python package requires the Graphviz software to be installed on yo
 - **Windows**: Download and install from https://graphviz.org/download/
 - **macOS**: `brew install graphviz`
 - **Linux**: `apt-get install graphviz` or `yum install graphviz`
+
+#### 4. Redis Connection Issues
+
+If you encounter issues connecting to Redis when using patent-based retrieval modes:
+
+1. Verify Redis is running:
+   - **macOS/Linux**: `redis-cli ping` (should return PONG)
+   - **Windows**: `redis-cli -h localhost ping`
+
+2. Check Redis connection settings in setup_patent_redis.py
+
+3. If Redis is not starting:
+   - **macOS**: `brew services restart redis`
+   - **Linux**: `sudo systemctl restart redis-server`
+   - **Windows**: Restart the Redis service from Services management console
 
 #### 4. Environment Variable Issues
 

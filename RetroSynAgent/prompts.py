@@ -106,7 +106,7 @@ Conditions: List the following in the exact order, separated by commas, skipping
 - For duration, provide the specific value or range with h, min, or d without any prefix.
 - For yield, provide the specific value or range in % without any prefix.
 
-Check whether any substance in the Reactants is commonly used as a solvent, catalyst, drying agent, stabilizer, adsorbent, buffer, etc.  
+Check whether any substance in the Reactants is commonly used as a solvent, catalyst, drying agent, stabilizer, adsorbent, buffer, etc.
 Document your checking process. If such a substance is identified, move it to the conditions section. Finally, re-output all the corrected reactions.
 
 Checking Process:
@@ -151,7 +151,7 @@ prompt_reaction_evaluation = """
 Reactions:
 {reactions}
 
-Check whether any substance in the Reactants is commonly used as a solvent, catalyst, drying agent, stabilizer, adsorbent, buffer, etc.  
+Check whether any substance in the Reactants is commonly used as a solvent, catalyst, drying agent, stabilizer, adsorbent, buffer, etc.
 Document your checking process. If such a substance is identified, move it to the conditions section. Finally, re-output all the corrected reactions. Ensure the number of reactions in the output matches the original.
 
 Format the output strictly as follows:
@@ -177,8 +177,8 @@ Conditions: List the following in the exact order, separated by commas, skipping
 """
 
 prompt_align_root_node = """
-For the given reactions, check if any substances are different names for the same entity as "{substance}". If so, standardize all names to "{substance}". 
-Ensure that the output includes all original reactions, with only the inconsistent names modified. 
+For the given reactions, check if any substances are different names for the same entity as "{substance}". If so, standardize all names to "{substance}".
+Ensure that the output includes all original reactions, with only the inconsistent names modified.
 Output the same number of reactions as provided, maintaining the original format. No additional notes, brackets, or information should be included.
 
 reactions:
@@ -271,7 +271,7 @@ Conditions: List the following in the exact order, separated by commas, skipping
 - For duration, provide the specific value or range with h, min, or d without any prefix.
 - For yield, provide the specific value or range in % without any prefix.
 
-Check whether any substance in the Reactants is commonly used as a solvent, catalyst, drying agent, stabilizer, adsorbent, buffer, etc.  
+Check whether any substance in the Reactants is commonly used as a solvent, catalyst, drying agent, stabilizer, adsorbent, buffer, etc.
 Document your checking process. If such a substance is identified, move it to the conditions section. Finally, re-output all the corrected reactions.
 
 Checking Process:
@@ -321,11 +321,11 @@ Pathway: List remaining valid reaction indices in order (e.g., idx4, idx7, idx3)
 
 
 recommend_prompt_template_general = """
-Given the target product "{substance}", 
+Given the target product "{substance}",
 please analyze and recommend the most optimal reaction pathway by following these structured steps:
 
 1. Pathways Analysis with Advantages and Disadvantages:
-Please analyze all pathways listed in "Reaction Pathways" comprehensively without any omissions. 
+Please analyze all pathways comprehensively without any omissions.
 For each pathway, provide a summary of its key features and evaluate its advantages and disadvantages based on:
 - Reaction Mildness: Evaluate if the reaction conditions are mild (i.e., requires low temperature, pressure, or a short reaction duration).
 - Reactant Availability and Cost: Consider the accessibility and cost-effectiveness of reactants, solvent, catalyst and atmospheric requirements.
@@ -345,7 +345,7 @@ Response Format:
 Analysis:
 
 Pathway: List reaction indices (e.g. idx4, idx7, idx3)
-Advantages: 
+Advantages:
 Disadvantages:
 
 Recommended Reaction Pathway: List reaction indices (e.g. idx4, idx7, idx3).
@@ -364,7 +364,7 @@ Explain the rationale for selecting this pathway over other alternatives, focusi
 """
 
 recommend_prompt_template_cost = """
-Given the target product "{substance}", 
+Given the target product "{substance}",
 please analyze and recommend the reaction pathway that results in the lowest reactant cost by following these structured steps:
 
 1. Reactant Inventory and Cost Analysis:
@@ -405,10 +405,10 @@ Explain the rationale for selecting this pathway over other alternatives, focusi
 # After listing all temperatures and pressures, analyze each pathway comprehensively to evaluate the mildness of reaction conditions, considering only temperature and pressure.
 
 recommend_prompt_template_condition = """
-Given the target product "{substance}", 
+Given the target product "{substance}",
 please analyze and recommend the reaction pathway that has the mildest reaction conditions by following these structured steps:
 
-1. Comprehensive Condition Inventory and Condition Analysis: 
+1. Comprehensive Condition Inventory and Condition Analysis:
 For each pathway listed in "Reaction Pathways," list all relevant reaction temperatures and pressures without considering any other factors (e.g., reaction time, yield, number of steps, or reactant cost).
 After listing all temperatures and pressures, conduct a comprehensive analysis of each pathway to evaluate the mildness of reaction conditions strictly based on the listed temperature and pressure values.
 
@@ -425,7 +425,7 @@ Condition Inventory and Analysis:
 Pathway: List reaction indices (e.g., idx4, idx7, idx3)
 Temperature: List temperature(s) for each reaction step, in degrees Celsius or Kelvin.
 Pressure: List pressure(s) for each reaction step, in atm or relevant units.
-Condition Analysis: 
+Condition Analysis:
 
 Recommended Reaction Pathway: List reaction indices (e.g., idx4, idx7, idx3).
 
@@ -475,7 +475,7 @@ recommend_prompt_commercial = """
 Reaction Pathways:
 {all_pathways}
 
-Please analyze and recommend the reaction pathways used to manufacture commercially available flubendiamide.
+Please analyze and recommend the reaction pathways used to manufacture commercially available {substance}.
 
 Format the output strictly as follows:
 

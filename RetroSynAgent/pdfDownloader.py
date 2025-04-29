@@ -156,22 +156,34 @@ class PDFDownloader:
         return titles_filtered2
 
     def main(self):
+        print(f"PDFDownloader: Creating directory {self.pdf_folder_name}")
         os.makedirs(self.pdf_folder_name, exist_ok=True)
-        # joined_titles = '\n'.join(self.title_list)
-        # print(f"titleList for {self.query}:\n {joined_titles}")
+        print(f"PDFDownloader: Query = {self.query}")
+        print(f"PDFDownloader: Found {len(self.title_list)} titles from Google Scholar")
+        joined_titles = '\n'.join(self.title_list)
+        print(f"PDFDownloader: Title list:\n{joined_titles}")
+
+        print("PDFDownloader: Filtering titles...")
         titles_filtered = self.filter_titles(self.title_list)
 
-        # print(f'Total number of titles: {len(self.title_list)}, '
-        #       f'{len(self.get_pdf_files())} have been downloaded, '
-        #       f'{len(self.no_download_link_titles)} do not have download links, '
-        #       f'{len(titles_filtered)} are planned to be downloaded.')
+        print(f'PDFDownloader: Total number of titles: {len(self.title_list)}, '
+              f'{len(self.get_pdf_files())} have been downloaded, '
+              f'{len(self.no_download_link_titles)} do not have download links, '
+              f'{len(titles_filtered)} are planned to be downloaded.')
 
         # random.shuffle(titles_filtered)
+        print("PDFDownloader: Starting download of PDFs...")
         self.download_pdfs(titles_filtered)
 
         download_pdf_filename_list = self.get_pdf_files()
-        # print(f'finished downloading, '
-        #       f'{len(download_pdf_filename_list)} have been downloaded, '
-        #       f'{len(self.no_download_link_titles)} do not have download links, '
-        #       f'{len(self.title_list)-len(self.get_pdf_files())-len(self.no_download_link_titles)} failed to be downloaded.')
-        return download_pdf_filename_list
+        print(f'PDFDownloader: Finished downloading, '
+              f'{len(download_pdf_filename_list)} have been downloaded, '
+              f'{len(self.no_download_link_titles)} do not have download links, '
+              f'{len(self.title_list)-len(self.get_pdf_files())-len(self.no_download_link_titles)} failed to be downloaded.')
+
+        # Return full paths to the downloaded PDFs
+        full_paths = []
+        for pdf_name in download_pdf_filename_list:
+            full_path = os.path.join(os.path.abspath(self.pdf_folder_name), pdf_name)
+            full_paths.append(full_path)
+        return full_paths
